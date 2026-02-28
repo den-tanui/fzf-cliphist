@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# fzf-cliphist: A simple fzf interface for cliphist
+# Reference: forgit/bin/git-forgit
+
+set -e
+set -u
+
+# Help message
+show_help() {
+    cat << EOF
+Usage: fzf-cliphist [OPTIONS]
+
+A simple fzf interface for cliphist with image support.
+
+Options:
+  -h, --help    Show this help message and exit
+EOF
+}
+
+# Check for dependencies
+check_dependencies() {
+    local missing=()
+    for cmd in cliphist fzf wl-copy; do
+        if ! command -v "$cmd" >/dev/null 2>&1; then
+            missing+=("$cmd")
+        fi
+    done
+
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo "Error: Missing dependencies: ${missing[*]}" >&2
+        exit 1
+    fi
+}
+
+# Preview function
+preview_item() {
+    local item="$1"
+    # cliphist list output format: "ID\tCONTENT"
+    # For images, CONTENT is often "[IMAGE] ..."
+    if [[ "$item" == *"[IMAGE]"* ]]; then
+        if [[ "${TERM:-}" == "xterm-kitty" ]]; then
+            cliphist decode <<< "$item" | kitty +kitten icat --stdin yes --transfer-mode file 2>/dev/null || cliphist decode <<< "$item"
+        else
+            echo "Image preview not supported in this terminal (${TERM:-unknown})."
+            cliphist decode <<< "$item"
+        fi
+    else
+        cliphist decode <<< "$item"
+    fi
+}
+
+# Main function
+main() {
+    if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+        show_help
+        exit 0
+    fi
+
+    check_dependencies
+
+    local list
+    list=$(cliphist list 2>/dev/null || true)
+    if [[ -z "$list" ]]; then
+        echo "Clipboard history is empty."
+        exit 0
+    fi
+
+    local selection
+    # Use the script itself for preview to handle logic
+    # We use BASH_SOURCE[0] to get the script path reliably
+    local script_path="${BASH_SOURCE[0]}"
+    
+    selection=$(echo "$list" | fzf \
+        --preview "$script_path --preview {}" \
+        --preview-window 'right:60%:wrap' \
+        --header 'Enter: Copy | Ctrl-Y: Copy (no exit)' \
+        --bind 'ctrl-y:execute-silent(cliphist decode <<< {} | wl-copy)+abort')
+
+    if [[ -n "$selection" ]]; then
+        cliphist decode <<< "$selection" | wl-copy
+    fi
+}
+
+# Handle preview mode
+if [[ "${1:-}" == "--preview" ]]; then
+    preview_item "$2"
+    exit 0
+fi
+
+main "$@"
