@@ -4,6 +4,7 @@ CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Get options with defaults
 BIND_KEY="$(tmux show-option -gqv @fzf-cliphist-bind)"
+[ -z "$BIND_KEY" ] && BIND_KEY="\\"
 [ -z "$BIND_KEY" ] && BIND_KEY="C-h"
 
 WIDTH="$(tmux show-option -gqv @fzf-cliphist-width)"
