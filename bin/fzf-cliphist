@@ -33,15 +33,15 @@ check_dependencies() {
     fi
 }
 
-# Format item: colorize ID in cyan
+# Format item: colorize ID in Tokyo Night yellow/orange
 format_item() {
     local item="$1"
     # Extract ID (first field)
     local id="${item%%	*}"
     # Extract content (rest after first tab)
     local content="${item#*	}"
-    # Color ID in cyan (36) and reset (0)
-    printf '%b%s%b\t%s\n' '\e[36m' "$id" '\e[0m' "$content"
+    # Tokyo Night: yellow #e0af68 (ANSI 220)
+    printf '%b%s%b\t%s\n' '\e[38;5;220m' "$id" '\e[0m' "$content"
 }
 
 # Main function
@@ -84,12 +84,7 @@ main() {
     local selection
     selection=$(echo "$list" | fzf \
         --ansi \
-        --preview="$script_path --preview {}" \
-        --preview-window='right:50%:wrap' \
-        --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
-        --bind='ctrl-p:toggle-preview' \
-        --bind='ctrl-y:execute-silent(cliphist decode {1} | wl-copy)+abort')
-    selection=$(echo "$list" | fzf \
+        --color=fg:#c0caf5,bg:#1a1b26,hl:#e0af68,fg+:#c0caf5,bg+:#292e42,hl+:#e0af68,info:#7aa2f7,spinner:#f9e2af,pointer:#7dcfff,marker:#f9e2af,header:#7aa2f7,prompt:#7aa2f7 \
         --preview="$script_path --preview {}" \
         --preview-window='right:50%:wrap' \
         --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
