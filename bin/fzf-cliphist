@@ -33,6 +33,17 @@ check_dependencies() {
     fi
 }
 
+# Format item: colorize ID in cyan
+format_item() {
+    local item="$1"
+    # Extract ID (first field)
+    local id="${item%%	*}"
+    # Extract content (rest after first tab)
+    local content="${item#*	}"
+    # Color ID in cyan (36) and reset (0)
+    printf '%b%s%b\t%s\n' '\e[36m' "$id" '\e[0m' "$content"
+}
+
 # Main function
 main() {
     local show_images=false
@@ -64,6 +75,9 @@ main() {
         exit 0
     fi
 
+    # Colorize IDs in the list
+    list=$(echo "$list" | while IFS= read -r line; do format_item "$line"; done)
+
     # Get script path for preview
     local script_path="${BASH_SOURCE[0]}"
 
@@ -71,16 +85,15 @@ main() {
     selection=$(echo "$list" | fzf \
         --preview="$script_path --preview {}" \
         --preview-window='right:50%:wrap' \
-        --delimiter='\t' \
-        --with-nth=2.. \
-        --color=info:reverse \
         --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
         --bind='ctrl-p:toggle-preview' \
         --bind='ctrl-y:execute-silent(cliphist decode {1} | wl-copy)+abort')
 
     if [[ -n "$selection" ]]; then
-        # Extract ID (first field)
-        local id="${selection%%	*}"
+        # Extract ID (first field) - strip ANSI codes first
+        local clean_selection
+        clean_selection=$(echo "$selection" | sed 's/\x1b\[[0-9;]*m//g')
+        local id="${clean_selection%%	*}"
         cliphist decode "$id" | wl-copy
     fi
 }
@@ -88,7 +101,10 @@ main() {
 # Preview handler: extract ID and decode
 preview_handler() {
     local item="$1"
-    local id="${item%%	*}"
+    # Strip ANSI codes and extract ID
+    local clean_item
+    clean_item=$(echo "$item" | sed 's/\x1b\[[0-9;]*m//g')
+    local id="${clean_item%%	*}"
     cliphist decode "$id"
 }
 
