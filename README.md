@@ -20,6 +20,66 @@ A tmux popup interface for clipboard history management with fzf.
 - [fzf](https://github.com/junegunn/fzf) - Fuzzy finder
 - [wl-clipboard](https://github.com/bugaevc/wl-clipboard) - Wayland clipboard utilities
 
+## Clipboard Capture Setup
+
+To capture clipboard contents, you need to run a background process that watches for clipboard changes:
+
+### Bash/Zsh
+
+Add to your `.bashrc` or `.zshrc`:
+
+```bash
+# Start cliphist store in background (runs on shell startup)
+wl-paste --watch cliphist store &
+```
+
+### Systemd (recommended)
+
+Create a user service for persistent capture:
+
+```bash
+mkdir -p ~/.config/systemd/user
+```
+
+Create `~/.config/systemd/user/cliphist.service`:
+
+```ini
+[Unit]
+Description=Clipboard history capture
+
+[Service]
+ExecStart=/usr/bin/bash -c 'wl-paste --watch cliphist store'
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
+```
+
+Enable and start:
+
+```bash
+systemctl --user enable --now cliphist
+```
+
+### Sway/Waybar
+
+Add to your sway config:
+
+```
+exec wl-paste --watch cliphist store
+```
+
+Or in waybar config:
+
+```json
+"custom/cliphist": {
+    "exec": "wl-paste --watch cliphist store",
+    "signal": 8
+}
+```
+
+## Installation
+
 ## Installation
 
 ### Via Tmux Plugin Manager (Recommended)
