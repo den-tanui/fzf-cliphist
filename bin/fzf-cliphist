@@ -5,6 +5,12 @@
 set -e
 set -u
 
+# Default values
+PREVIEW_WINDOW="right:50%:wrap"
+HEADER="Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview"
+COLOR="fg:#c0caf5,bg:#1a1b26,hl:#e0af68,fg+:#c0caf5,bg+:#292e42,hl+:#e0af68,info:#7aa2f7"
+PASTE_TARGET="yes"
+
 # Help message
 show_help() {
     cat << EOF
@@ -13,8 +19,12 @@ Usage: fzf-cliphist [OPTIONS]
 A simple fzf interface for cliphist.
 
 Options:
-  -h, --help    Show this help message and exit
-  --images       Include images in the clipboard history
+  -h, --help           Show this help message and exit
+  --images              Include images in the clipboard history
+  --preview-window      fzf preview window option
+  --header             fzf header option
+  --color              fzf color option
+  --paste-target       Paste to caller pane (yes/no)
 EOF
 }
 
@@ -48,14 +58,35 @@ format_item() {
 main() {
     local show_images=false
 
-    for arg in "$@"; do
-        case "$arg" in
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
             -h|--help)
                 show_help
                 exit 0
                 ;;
             --images)
                 show_images=true
+                shift
+                ;;
+            --preview-window)
+                PREVIEW_WINDOW="$2"
+                shift 2
+                ;;
+            --header)
+                HEADER="$2"
+                shift 2
+                ;;
+            --color)
+                COLOR="$2"
+                shift 2
+                ;;
+            --paste-target)
+                PASTE_TARGET="$2"
+                shift 2
+                ;;
+            *)
+                shift
                 ;;
         esac
     done
@@ -84,10 +115,10 @@ main() {
     local selection
     selection=$(echo "$list" | fzf \
         --ansi \
-        --color=fg:#c0caf5,bg:#1a1b26,hl:#e0af68,fg+:#c0caf5,bg+:#292e42,hl+:#e0af68,info:#7aa2f7,spinner:#f9e2af,pointer:#7dcfff,marker:#f9e2af,header:#7aa2f7,prompt:#7aa2f7 \
+        --color="$COLOR" \
         --preview="$script_path --preview {}" \
-        --preview-window='right:50%:wrap' \
-        --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
+        --preview-window="$PREVIEW_WINDOW" \
+        --header="$HEADER" \
         --bind='ctrl-p:toggle-preview' \
         --bind='ctrl-y:execute-silent(cliphist decode {1} | wl-copy)+abort')
 
@@ -96,7 +127,27 @@ main() {
         local clean_selection
         clean_selection=$(echo "$selection" | sed 's/\x1b\[[0-9;]*m//g')
         local id="${clean_selection%%	*}"
-        cliphist decode "$id" | wl-copy
+
+        # Get decoded content
+        local decoded
+        decoded=$(cliphist decode "$id")
+
+        # Paste to caller pane if enabled
+        if [[ "$PASTE_TARGET" == "yes" ]]; then
+            # TMUX_PANE is set inside tmux popup
+            if [[ -n "${TMUX_PANE:-}" ]]; then
+                # Paste into the caller pane (previous pane in the stack)
+                tmux paste-buffer -t "{last}" -b "${TMUX_PANE}"
+                # Alternative: send to last pane
+                # tmux send-keys -t "{last}" "$decoded"
+            else
+                # Fallback to wl-copy if not in tmux
+                echo "$decoded" | wl-copy
+            fi
+        else
+            # Default: use wl-copy
+            echo "$decoded" | wl-copy
+        fi
     fi
 }
 
@@ -110,7 +161,7 @@ preview_handler() {
     cliphist decode "$id"
 }
 
-# Parse arguments
+# Parse arguments for preview mode
 if [[ "${1:-}" == "--preview" ]]; then
     preview_handler "$2"
     exit 0
