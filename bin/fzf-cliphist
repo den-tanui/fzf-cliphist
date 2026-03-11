@@ -83,6 +83,13 @@ main() {
 
     local selection
     selection=$(echo "$list" | fzf \
+        --ansi \
+        --preview="$script_path --preview {}" \
+        --preview-window='right:50%:wrap' \
+        --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
+        --bind='ctrl-p:toggle-preview' \
+        --bind='ctrl-y:execute-silent(cliphist decode {1} | wl-copy)+abort')
+    selection=$(echo "$list" | fzf \
         --preview="$script_path --preview {}" \
         --preview-window='right:50%:wrap' \
         --header='Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview' \
