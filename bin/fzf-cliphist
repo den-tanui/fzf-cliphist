@@ -9,7 +9,6 @@ set -u
 PREVIEW_WINDOW="right:50%:wrap"
 HEADER="Enter: Copy | Ctrl-Y: Copy (no exit) | Ctrl-P: Toggle preview"
 COLOR="fg:#c0caf5,bg:#1a1b26,hl:#e0af68,fg+:#c0caf5,bg+:#292e42,hl+:#e0af68,info:#7aa2f7"
-PASTE_TARGET="yes"
 
 # Help message
 show_help() {
@@ -24,7 +23,6 @@ Options:
   --preview-window      fzf preview window option
   --header             fzf header option
   --color              fzf color option
-  --paste-target       Paste to caller pane (yes/no)
 EOF
 }
 
@@ -43,14 +41,11 @@ check_dependencies() {
     fi
 }
 
-# Format item: colorize ID in Tokyo Night yellow/orange
+# Format item: colorize ID in Tokyo Night yellow
 format_item() {
     local item="$1"
-    # Extract ID (first field)
     local id="${item%%	*}"
-    # Extract content (rest after first tab)
     local content="${item#*	}"
-    # Tokyo Night: yellow #e0af68 (ANSI 220)
     printf '%b%s%b\t%s\n' '\e[38;5;220m' "$id" '\e[0m' "$content"
 }
 
@@ -58,7 +53,6 @@ format_item() {
 main() {
     local show_images=false
 
-    # Parse arguments
     while [[ $# -gt 0 ]]; do
         case "$1" in
             -h|--help)
@@ -81,10 +75,6 @@ main() {
                 COLOR="$2"
                 shift 2
                 ;;
-            --paste-target)
-                PASTE_TARGET="$2"
-                shift 2
-                ;;
             *)
                 shift
                 ;;
@@ -97,7 +87,6 @@ main() {
     if [[ "$show_images" == true ]]; then
         list=$(cliphist list 2>/dev/null || true)
     else
-        # Filter out images (binary data) by default
         list=$(cliphist list 2>/dev/null | grep -v '\[\[ binary data' || true)
     fi
 
@@ -106,10 +95,8 @@ main() {
         exit 0
     fi
 
-    # Colorize IDs in the list
     list=$(echo "$list" | while IFS= read -r line; do format_item "$line"; done)
 
-    # Get script path for preview
     local script_path="${BASH_SOURCE[0]}"
 
     local selection
@@ -123,45 +110,22 @@ main() {
         --bind='ctrl-y:execute-silent(cliphist decode {1} | wl-copy)+abort')
 
     if [[ -n "$selection" ]]; then
-        # Extract ID (first field) - strip ANSI codes first
         local clean_selection
         clean_selection=$(echo "$selection" | sed 's/\x1b\[[0-9;]*m//g')
         local id="${clean_selection%%	*}"
-
-        # Get decoded content
-        local decoded
-        decoded=$(cliphist decode "$id")
-
-        # Paste to caller pane if enabled
-        if [[ "$PASTE_TARGET" == "yes" ]]; then
-            # TMUX_PANE is set inside tmux popup
-            if [[ -n "${TMUX_PANE:-}" ]]; then
-                # Paste into the caller pane (previous pane in the stack)
-                tmux paste-buffer -t "{last}" -b "${TMUX_PANE}"
-                # Alternative: send to last pane
-                # tmux send-keys -t "{last}" "$decoded"
-            else
-                # Fallback to wl-copy if not in tmux
-                echo "$decoded" | wl-copy
-            fi
-        else
-            # Default: use wl-copy
-            echo "$decoded" | wl-copy
-        fi
+        cliphist decode "$id" | wl-copy
     fi
 }
 
-# Preview handler: extract ID and decode
+# Preview handler
 preview_handler() {
     local item="$1"
-    # Strip ANSI codes and extract ID
     local clean_item
     clean_item=$(echo "$item" | sed 's/\x1b\[[0-9;]*m//g')
     local id="${clean_item%%	*}"
     cliphist decode "$id"
 }
 
-# Parse arguments for preview mode
 if [[ "${1:-}" == "--preview" ]]; then
     preview_handler "$2"
     exit 0

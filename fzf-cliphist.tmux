@@ -12,10 +12,6 @@ WIDTH="$(tmux show-option -gqv @fzf-cliphist-width)"
 HEIGHT="$(tmux show-option -gqv @fzf-cliphist-height)"
 [ -z "$HEIGHT" ] && HEIGHT="80%"
 
-# Paste to caller pane instead of using wl-copy
-PASTE_TARGET="$(tmux show-option -gqv @fzf-cliphist-paste-target)"
-[ -z "$PASTE_TARGET" ] && PASTE_TARGET="yes"
-
 # FZF options
 FZF_PREVIEW_WINDOW="$(tmux show-option -gqv @fzf-cliphist-preview-window)"
 [ -z "$FZF_PREVIEW_WINDOW" ] && FZF_PREVIEW_WINDOW="right:50%:wrap"
@@ -31,12 +27,6 @@ FZF_CLIPHIST_CMD="$CURRENT_DIR/bin/fzf-cliphist"
 FZF_CLIPHIST_CMD="$FZF_CLIPHIST_CMD --preview-window '$FZF_PREVIEW_WINDOW'"
 FZF_CLIPHIST_CMD="$FZF_CLIPHIST_CMD --header '$FZF_HEADER'"
 FZF_CLIPHIST_CMD="$FZF_CLIPHIST_CMD --color '$FZF_COLOR'"
-FZF_CLIPHIST_CMD="$FZF_CLIPHIST_CMD --paste-target '$PASTE_TARGET'"
 
-# For paste-target=yes, we need to capture the target pane
-if [ "$PASTE_TARGET" = "yes" ]; then
-    # Use -t to specify target pane (the one that called the popup)
-    tmux bind-key -T root "$BIND_KEY" display-popup -w "$WIDTH" -h "$HEIGHT" -t "{last}" -E "$FZF_CLIPHIST_CMD"
-else
-    tmux bind-key -T root "$BIND_KEY" display-popup -w "$WIDTH" -h "$HEIGHT" -E "$FZF_CLIPHIST_CMD"
-fi
+# Bind the key
+tmux bind-key -T root "$BIND_KEY" display-popup -w "$WIDTH" -h "$HEIGHT" -E "$FZF_CLIPHIST_CMD"
