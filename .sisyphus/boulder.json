@@ -1,9 +1,8 @@
 {
-  "active_plan": "/home/opt/fzf/fzf-cliphist/.sisyphus/plans/fzf-cliphist.md",
-  "started_at": "2026-02-28T21:09:10.752Z",
-  "session_ids": [
-    "ses_35a1197b0ffei1Owkpa10VLdfw"
-  ],
-  "plan_name": "fzf-cliphist",
+  "active_plan": "/home/opt/fzf/fzf-cliphist/.sisyphus/plans/tmux-plugin.md",
+  "started_at": "2026-03-11T00:40:00.846Z",
+  "session_ids": ["ses_3359c307affez1ovV0NdEFaUad"],
+  "plan_name": "tmux-plugin",
+  "worktree_path": "/home/opt/fzf/fzf-cliphist",
   "agent": "atlas"
 }

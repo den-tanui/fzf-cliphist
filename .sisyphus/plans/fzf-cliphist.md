@@ -118,7 +118,7 @@ Wave 2 (Integration + Docs):
 
 ## TODOs
 
-- [ ] 1. Project scaffolding
+- [x] 1. Project scaffolding
 
   **What to do**:
   - Create directory structure following forgit pattern:
@@ -168,7 +168,7 @@ Wave 2 (Integration + Docs):
 
   **Commit**: NO
 
-- [ ] 2. Main fzf-cliphist script
+- [x] 2. Main fzf-cliphist script
 
   **What to do**:
   - Create `bin/fzf-cliphist` executable shell script
